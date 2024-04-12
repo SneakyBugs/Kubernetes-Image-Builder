@@ -28,6 +28,70 @@ Image versions are managed with Git tags.
 - Terratest test for disk resize.
 - Terratest test bootstrapping a cluster with kubeadm and connecting to the Kubernetes API.
 
+## Design
+
+### Requirement prioritization
+
+| Requirement                                   | Priority | Risk |
+| --------------------------------------------- | -------- | ---- |
+| Compatible with KubeVirt                      | MH       | High |
+| Compatible with kubeadm Cluster API providers | MH       | High |
+| QEMU guest agent setup                        | MH       | Low  |
+| Cloud Init setup                              | MH       | Low  |
+| kubeadm installation                          | MH       | High |
+| Firewall setup                                | NTH      | Low  |
+
+**Priority key:** MH - must have, NTH - nice to have.
+
+### Functional description
+
+The image builder will be a Packer template.
+The Packer template will use [the Ansible provisioner](https://developer.hashicorp.com/packer/integrations/hashicorp/ansible/latest/components/provisioner/ansible) to run an Ansible playbook for configuring the machine.
+
+```mermaid
+sequenceDiagram
+    # Defined explicitly for nicer order.
+    actor Alice
+    participant Packer
+    participant Ansible
+
+    Alice->>+Packer: packer build
+    Packer->>+QEMU/KVM: QEMU builder
+    Packer->>+Ansible: Ansible provisioner
+    Ansible->>QEMU/KVM: configure VM
+    Ansible-->>-Packer: done
+    Packer->>QEMU/KVM: export disk image
+    QEMU/KVM-->>-Packer: raw image
+    Packer-->>-Alice: raw image
+```
+
+The image builder will have automated tests written with Terratest in Go.
+The test will use Terraform with `dmacvicar/libvirt` provider to provision virtual machines from image artifacts.
+Such setup will also allow bootstrapping a cluster over SSH and connecting to the Kubernetes API using the official Go Kubernetes client.
+
+```mermaid
+sequenceDiagram
+    actor Alice
+
+    Alice->>+Terratest: go test .
+    Terratest->>+Packer: packer build
+    Packer-->>-Terratest: raw image
+    Terratest->>+Terraform: apply test/terraform module
+    activate VM
+    Terratest-->>VM: assert against SSH command output
+    Terratest->>Terraform: destroy test/terrarform module
+    deactivate VM
+    deactivate Terraform
+    Terratest-->>-Alice: results
+```
+
+The parts are split into folders in the repository:
+
+- Root folder containing the Packer template.
+- `playbook` folder containing an Ansible playbook configuring the image to be a Kubernetes node.
+- `test` folder containing Terratest tests.
+- `test/terraform` folder containing a Terraform module using `dmacvicar/libvirt` provider for provisioning virtual machines from an image artifact.
+
 ## Useful resources
 
 Packer related resources:
@@ -37,6 +101,8 @@ Packer related resources:
 - [Official image builder project.](https://github.com/kubernetes-sigs/image-builder)
 - [Official QEMU image builder.](https://github.com/kubernetes-sigs/image-builder/tree/main/images/capi/packer/qemu)
 - [Example Packer repository with automated tests.](https://git.houseofkummer.com/homelab/devops/packer-alpine)
+- [Example Libvirt Terraform modules that can be used for testing images.](https://git.houseofkummer.com/Lior/terraform-libvirt-images/-/tree/main?ref_type=heads)
+- [KubeVirt Containerized Data Importer lab.](https://kubevirt.io/labs/kubernetes/lab2.html) (How the image artifact will be used)
 
 Kubeadm related resources:
 
