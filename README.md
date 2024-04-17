@@ -1,5 +1,13 @@
 # Kubernetes image builder
 
+## Usage
+
+Build the image:
+
+```
+sudo packer build image.pkr.hcl
+```
+
 ## Requirements
 
 ### Scope
@@ -117,12 +125,13 @@ The parts are split into folders in the repository:
 Packer related resources:
 
 - [Rocky Linux downloads.](https://rockylinux.org/download)
+- [Rocky Linux machine images.](https://dl.rockylinux.org/pub/rocky/9/images/x86_64)
 - [Packer QEMU builder.](https://developer.hashicorp.com/packer/integrations/hashicorp/qemu/latest/components/builder/qemu)
-- [Official image builder project.](https://github.com/kubernetes-sigs/image-builder)
-- [Official QEMU image builder.](https://github.com/kubernetes-sigs/image-builder/tree/main/images/capi/packer/qemu)
+- [Official Kubernetes image builder project.](https://github.com/kubernetes-sigs/image-builder)
+- [Official Kubernetes QEMU image builder.](https://github.com/kubernetes-sigs/image-builder/tree/main/images/capi/packer/qemu)
 - [Example Packer repository with automated tests.](https://git.houseofkummer.com/homelab/devops/packer-alpine)
 - [Example Libvirt Terraform modules that can be used for testing images.](https://git.houseofkummer.com/Lior/terraform-libvirt-images/-/tree/main?ref_type=heads)
-- [KubeVirt Containerized Data Importer lab.](https://kubevirt.io/labs/kubernetes/lab2.html) (How the image artifact will be used)
+- [Cloud Init NoCloud documentation.](https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html)
 
 Kubeadm related resources:
 
@@ -130,3 +139,9 @@ Kubeadm related resources:
 - [Kubernetes CNI installation from package manager.](https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/kubernetes/tasks/redhat.yml#L34) Previous Ansible playbook [downloaded CNI plugins manually.](https://git.houseofkummer.com/Lior/terraform-libvirt/-/blob/b7241fe100e6f6e5981ce13948d471b83d5325f3/playbook/main.yml#L85-102)
 - [Kubeadm installation guide.](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 - [Kubeadm reference documentation.](https://kubernetes.io/docs/reference/setup-tools/kubeadm/)
+
+KubeVirt related resources:
+
+- [KubeVirt Containerized Data Importer lab.](https://kubevirt.io/labs/kubernetes/lab2.html) (How the image artifact will be used)
+- [KubeVirt UEFI settings.](https://kubevirt.io/user-guide/virtual_machines/virtual_hardware/#biosuefi)
+- [KubeVirt CDI image format support.](https://kubevirt.io/user-guide/operations/containerized_data_importer/#supported-image-formats)
