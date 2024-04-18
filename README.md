@@ -132,6 +132,7 @@ Packer related resources:
 - [Example Packer repository with automated tests.](https://git.houseofkummer.com/homelab/devops/packer-alpine)
 - [Example Libvirt Terraform modules that can be used for testing images.](https://git.houseofkummer.com/Lior/terraform-libvirt-images/-/tree/main?ref_type=heads)
 - [Cloud Init NoCloud documentation.](https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html)
+- [Systemd - Building images safely.](https://systemd.io/BUILDING_IMAGES/)
 
 Kubeadm related resources:
 
@@ -145,3 +146,7 @@ KubeVirt related resources:
 - [KubeVirt Containerized Data Importer lab.](https://kubevirt.io/labs/kubernetes/lab2.html) (How the image artifact will be used)
 - [KubeVirt UEFI settings.](https://kubevirt.io/user-guide/virtual_machines/virtual_hardware/#biosuefi)
 - [KubeVirt CDI image format support.](https://kubevirt.io/user-guide/operations/containerized_data_importer/#supported-image-formats)
+
+Libvirt related resources:
+
+- [Libvirt pool permission error troubleshooting.](https://github.com/dmacvicar/terraform-provider-libvirt/issues/978#issuecomment-1276244924)

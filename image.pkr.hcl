@@ -7,12 +7,13 @@ packer {
   }
 }
 
-source "qemu" "example" {
+source "qemu" "rocky" {
   iso_url          = "https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.3-20231113.0.x86_64.qcow2"
   iso_checksum     = "file:https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.3-20231113.0.x86_64.qcow2.CHECKSUM"
   disk_image       = true
   skip_resize_disk = true
   headless         = true
+  vm_name          = "rocky-9.qcow2"
 
   efi_boot  = true
   cpu_model = "host"
@@ -48,5 +49,14 @@ source "qemu" "example" {
 }
 
 build {
-  sources = ["source.qemu.example"]
+  sources = ["source.qemu.rocky"]
+
+  provisioner "shell" {
+    inline = [
+      # Cleanup for systemd. See:
+      # https://systemd.io/BUILDING_IMAGES/
+      "sudo rm /var/lib/systemd/random-seed /etc/hostname",
+      "sudo cloud-init clean --logs --seed --machine-id",
+    ]
+  }
 }
