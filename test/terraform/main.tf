@@ -16,7 +16,7 @@ resource "libvirt_cloudinit_disk" "config" {
         sudo: ALL=(ALL) NOPASSWD:ALL
         shell: /bin/bash
         ssh-authorized-keys:
-          ${indent(6, yamlencode(var.authorized_keys))}
+          - ${var.authorized_key}
     packages:
       - qemu-guest-agent
     runcmd:

@@ -8,9 +8,9 @@ variable "user" {
   default = "terraform"
 }
 
-variable "authorized_keys" {
-  type    = list(string)
-  default = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICmTzPVmwo0Q7txYnDkD2ubmRxLUBP1MB5x5j8+v0hK8 lior-workstation"]
+variable "authorized_key" {
+  type    = string
+  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICmTzPVmwo0Q7txYnDkD2ubmRxLUBP1MB5x5j8+v0hK8 lior-workstation"
 }
 
 variable "memory" {
