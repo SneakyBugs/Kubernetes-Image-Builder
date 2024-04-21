@@ -4,6 +4,10 @@ packer {
       source  = "github.com/hashicorp/qemu"
       version = "~> 1"
     }
+    ansible = {
+      version = ">= 1.1.0"
+      source  = "github.com/hashicorp/ansible"
+    }
   }
 }
 
@@ -50,6 +54,13 @@ source "qemu" "rocky" {
 
 build {
   sources = ["source.qemu.rocky"]
+
+  provisioner "ansible" {
+    playbook_file = "./ansible/main.yml"
+    user          = "packer"
+    # https://github.com/hashicorp/packer/issues/11783
+    extra_arguments = ["--scp-extra-args", "'-O'"]
+  }
 
   provisioner "shell" {
     inline = [

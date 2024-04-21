@@ -3,3 +3,5 @@ build
 .terraform
 *.tfstate
 *.tfstate.backup
+
+.venv

@@ -2,10 +2,31 @@
 
 ## Usage
 
+Install requirements:
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+ansible-galaxy install -r ansible/requirements.yml
+```
+
+Enter a root shell:
+
+```
+sudo su root
+```
+
+Activate the virtual environment in the root shell:
+
+```
+source .venv/bin/activate
+```
+
 Build the image:
 
 ```
-sudo packer build image.pkr.hcl
+packer build image.pkr.hcl
 ```
 
 ## Requirements
@@ -22,7 +43,9 @@ Image versions are managed with Git tags.
 - Machine image must contain QEMU guest agent.
 - Machine image must contain Cloud Init.
 - Machine image must contain kubeadm, kubelet, kubectl and CNI plugins.
-- Machine must be prepared with a firewall setup.
+- Machine image must be [set up with watchdog daemon.](https://kubevirt.io/user-guide/virtual_machines/liveness_and_readiness_probes/#defining-a-watchdog)
+- Machine image must be prepared with a firewall setup.
+- Machine image must be set up for audit logging.
 
 ### Nonfunctional requirements
 
