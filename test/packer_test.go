@@ -36,8 +36,6 @@ func TestPackerImage(t *testing.T) {
 
 	defer terraform.Destroy(t, terraformOptions)
 	terraform.InitAndApply(t, terraformOptions)
-	// Sometimes the Libvirt provider returns wrong IP address on first apply.
-	terraform.Apply(t, terraformOptions)
 
 	sshIP := terraform.Output(t, terraformOptions, "ip")
 	host := ssh.Host{

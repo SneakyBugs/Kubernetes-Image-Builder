@@ -15,12 +15,12 @@ variable "authorized_key" {
 
 variable "memory" {
   type    = number
-  default = 4096
+  default = 6144
 }
 
 variable "cores" {
   type    = number
-  default = 2
+  default = 4
 }
 
 variable "disk_size" {

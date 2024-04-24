@@ -2,6 +2,147 @@
 - name: Node configuration
   hosts: default
   tasks:
-    - name: Debug
-      ansible.builtin.debug:
-        msg: Hello world!
+    # node role start
+    - name: Kernel | overlay module is present
+      community.general.modprobe:
+        name: overlay
+        state: present
+      become: true
+
+    - name: Kernel | br_netfilter module is present
+      community.general.modprobe:
+        name: br_netfilter
+        state: present
+      become: true
+
+    - name: Kernel | persist required modules
+      ansible.builtin.copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/kubernetes.conf
+        mode: "0644"
+      become: true
+
+    - name: Kernel | Set and persist params
+      ansible.posix.sysctl:
+        name: "{{ item.param }}"
+        value: "{{ item.val }}"
+        state: present
+        sysctl_set: true
+        reload: true
+      become: true
+      loop:
+        - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
+        - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
+        - { param: net.ipv4.ip_forward, val: 1 }
+        - { param: net.ipv6.conf.all.forwarding, val: 1 }
+        - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
+        - { param: net.ipv4.tcp_congestion_control, val: bbr }
+        - { param: vm.overcommit_memory, val: 1 }
+        - { param: kernel.panic, val: 10 }
+        - { param: kernel.panic_on_oops, val: 1 }
+        - { param: fs.inotify.max_user_instances, val: 8192 }
+        - { param: fs.inotify.max_user_watches, val: 524288 }
+
+    # containerd role
+    - name: Containerd | download
+      ansible.builtin.get_url:
+        url: https://github.com/containerd/containerd/releases/download/v1.7.13/containerd-1.7.13-linux-amd64.tar.gz
+        checksum: sha256:c2371c009dd8b7738663333d91e5ab50d204f8bcae24201f45d59060d12c3a23
+        dest: /tmp/containerd.tar.gz
+
+    - name: Containerd | unarchive
+      ansible.builtin.unarchive:
+        src: /tmp/containerd.tar.gz
+        remote_src: true
+        dest: /usr/local
+      become: true
+
+    - name: Containerd | systemd unit is present
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/containerd/containerd/v1.7.13/containerd.service
+        dest: /usr/lib/systemd/system/containerd.service
+      become: true
+
+    - name: Containerd | config directory is present
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+      become: true
+
+    - name: Containerd | config is present
+      ansible.builtin.copy:
+        content: |
+          version = 2
+          [plugins."io.containerd.grpc.v1.cri"]
+            sandbox_image = "registry.k8s.io/pause:3.9"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+            runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+        dest: /etc/containerd/config.toml
+        mode: "644"
+      become: true
+
+    - name: Containerd | service is enabled
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        name: containerd.service
+        state: started
+      become: true
+
+    - name: Containerd | runc is present
+      ansible.builtin.get_url:
+        url: https://github.com/opencontainers/runc/releases/download/v1.1.12/runc.amd64
+        dest: /usr/local/sbin/runc
+        mode: '755'
+      become: true
+
+    # kubernetes role
+    - name: SELinux | set permissive mode
+      ansible.posix.selinux:
+        policy: targeted
+        state: permissive
+      become: true
+
+    - name: Kubernetes | dnf repo is present
+      ansible.builtin.yum_repository:
+        name: Kubernetes
+        description: Kubernetes binaries
+        baseurl: https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+        gpgcheck: true
+        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
+        exclude:
+          - kubelet
+          - kubeadm
+          - kubectl
+          - cri-tools
+          - kubernetes-cni
+      become: true
+
+    - name: kubernetes | packages are installed
+      ansible.builtin.dnf:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+          - kubernetes-cni
+        disable_excludes: Kubernetes
+      become: true
+
+    - name: Kubernetes | kubelet service is enabled
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: kubelet.service
+        state: started
+      become: true
+
+    - name: Calico | NetworkManager config is present
+      ansible.builtin.copy:
+        content: |
+          [keyfile]
+          unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+        dest: /etc/NetworkManager/conf.d/calico.conf
+      become: true
