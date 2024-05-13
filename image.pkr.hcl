@@ -12,8 +12,8 @@ packer {
 }
 
 source "qemu" "rocky" {
-  iso_url          = "https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.3-20231113.0.x86_64.qcow2"
-  iso_checksum     = "file:https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.3-20231113.0.x86_64.qcow2.CHECKSUM"
+  iso_url          = "https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.4-20240509.0.x86_64.qcow2"
+  iso_checksum     = "file:https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.4-20240509.0.x86_64.qcow2.CHECKSUM"
   disk_image       = true
   skip_resize_disk = true
   headless         = true
