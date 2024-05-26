@@ -8,7 +8,6 @@ Install requirements:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-ansible-galaxy install -r ansible/requirements.yml
 ```
 
 Enter a root shell:
@@ -17,16 +16,39 @@ Enter a root shell:
 sudo su root
 ```
 
-Activate the virtual environment in the root shell:
+Activate the virtual environment in the root shell, and install Ansible Galaxy collections:
 
 ```
 source .venv/bin/activate
+ansible-galaxy install -r ansible/requirements.yml
+```
+
+Initialize Packer:
+
+```
+packer init image.pkr.hcl
 ```
 
 Build the image:
 
 ```
 packer build image.pkr.hcl
+```
+
+## How-to guides
+
+### How-to prepare dependencies on Debian
+
+Install dependencies for building images:
+
+```
+sudo apt-get install qemu-utils qemu-system-x86
+```
+
+Install dependencies for testing images:
+
+```
+sudo apt-get install libvirt-daemon-system libvirt-clients
 ```
 
 ## Requirements
