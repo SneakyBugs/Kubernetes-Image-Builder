@@ -2,27 +2,6 @@
 
 ## Usage
 
-Install requirements:
-
-```
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-Enter a root shell:
-
-```
-sudo su root
-```
-
-Activate the virtual environment in the root shell, and install Ansible Galaxy collections:
-
-```
-source .venv/bin/activate
-ansible-galaxy install -r ansible/requirements.yml
-```
-
 Initialize Packer:
 
 ```
@@ -32,7 +11,7 @@ packer init image.pkr.hcl
 Build the image:
 
 ```
-packer build image.pkr.hcl
+sudo packer build image.pkr.hcl
 ```
 
 ## How-to guides

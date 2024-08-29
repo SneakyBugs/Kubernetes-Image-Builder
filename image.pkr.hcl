@@ -56,6 +56,7 @@ build {
   sources = ["source.qemu.rocky"]
 
   provisioner "ansible" {
+    command       = "./ansible/ansible.sh"
     playbook_file = "./ansible/main.yml"
     user          = "packer"
     # https://github.com/hashicorp/packer/issues/11783
