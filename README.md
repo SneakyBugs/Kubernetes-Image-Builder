@@ -14,9 +14,15 @@ Build the image:
 sudo packer build image.pkr.hcl
 ```
 
+Run tests:
+
+```
+sudo $(which go) test ./...
+```
+
 ## How-to guides
 
-### How-to prepare dependencies on Debian
+### How-to prepare dependencies for building on Debian
 
 Install dependencies for building images:
 
@@ -24,10 +30,42 @@ Install dependencies for building images:
 sudo apt-get install qemu-utils qemu-system-x86
 ```
 
+### How-to prepare dependencies for testing on Debian
+
 Install dependencies for testing images:
 
 ```
-sudo apt-get install libvirt-daemon-system libvirt-clients
+sudo apt-get install libvirt-daemon-system libvirt-clients xsltproc
+```
+
+Create a `pool.xml` file with the following content:
+
+```
+<pool type="dir">
+  <name>default</name>
+  <target>
+    <path>/var/lib/libvirt/images</path>
+  </target>
+</pool>
+```
+
+Create a storage pool:
+
+```
+sudo virsh pool-create pool.xml --build
+```
+
+Start the default network:
+
+```
+sudo virsh net-start default
+```
+
+Set `security_driver = "none"` in `/etc/libvirt/qemu.conf`.
+Restart `libvirtd` to apply the configuration:
+
+```
+sudo systemctl restart libvirtd
 ```
 
 ## Requirements
