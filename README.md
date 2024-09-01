@@ -1,5 +1,14 @@
 # Kubernetes image builder
 
+This repositoy contains code for building virtual machine images of Rocky Linux 9 for running Kubernetes nodes using Cluster API with KubeVirt infrastructure provider and Kubeadm bootstrap and control plane providers.
+
+Why not
+[the official Kubernetes image builder?](https://github.com/kubernetes-sigs/image-builder)
+
+- It is bloated with steps for operating systems, versions, and providers we don't need.
+- It does not have automated testing.
+- It uses outdated Packer syntax.
+
 ## Usage
 
 Initialize Packer:
@@ -191,15 +200,12 @@ Packer related resources:
 - [Packer QEMU builder.](https://developer.hashicorp.com/packer/integrations/hashicorp/qemu/latest/components/builder/qemu)
 - [Official Kubernetes image builder project.](https://github.com/kubernetes-sigs/image-builder)
 - [Official Kubernetes QEMU image builder.](https://github.com/kubernetes-sigs/image-builder/tree/main/images/capi/packer/qemu)
-- [Example Packer repository with automated tests.](https://git.houseofkummer.com/homelab/devops/packer-alpine)
-- [Example Libvirt Terraform modules that can be used for testing images.](https://git.houseofkummer.com/Lior/terraform-libvirt-images/-/tree/main?ref_type=heads)
+- [Example Packer repository with automated tests.](https://github.com/LKummer/packer-alpine)
 - [Cloud Init NoCloud documentation.](https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html)
 - [Systemd - Building images safely.](https://systemd.io/BUILDING_IMAGES/)
 
 Kubeadm related resources:
 
-- [Previous POC playbook for preparing Rocky for Kubeadm bootstrap.](https://git.houseofkummer.com/Lior/terraform-libvirt/-/blob/b7241fe100e6f6e5981ce13948d471b83d5325f3/playbook/main.yml)
-- [Kubernetes CNI installation from package manager.](https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/kubernetes/tasks/redhat.yml#L34) Previous Ansible playbook [downloaded CNI plugins manually.](https://git.houseofkummer.com/Lior/terraform-libvirt/-/blob/b7241fe100e6f6e5981ce13948d471b83d5325f3/playbook/main.yml#L85-102)
 - [Kubeadm installation guide.](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 - [Kubeadm reference documentation.](https://kubernetes.io/docs/reference/setup-tools/kubeadm/)
 
