@@ -139,6 +139,11 @@
         state: started
       become: true
 
+    - name: Kubernetes | Pull images for faster startup
+      ansible.builtin.command:
+        cmd: kubeadm config images pull
+      become: true
+
     - name: Calico | NetworkManager config is present
       ansible.builtin.copy:
         content: |
