@@ -57,7 +57,8 @@ func TestPackerImage(t *testing.T) {
 	}
 
 	// Check Cloud Init ran successfully and SSH works.
-	ssh.CheckSshCommand(t, host, "cloud-init status --wait")
+	// Retry because sometimes SSH server takes a few seconds to start after booting.
+	ssh.CheckSshCommandWithRetry(t, host, "cloud-init status --wait", 5, time.Second*5)
 
 	containerdShowState := ssh.CheckSshCommand(t, host, "sudo systemctl show containerd --property=ActiveState")
 	if !strings.Contains(containerdShowState, "ActiveState=active") {
