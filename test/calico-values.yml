@@ -1,0 +1,18 @@
+defaultFelixConfiguration:
+  enabled: true
+  # Need to set this because the cluster is running inside another VXLAN overlay network.
+  vxlanPort: 8472
+installation:
+  calicoNetwork:
+    bgp: Disabled
+    ipPools:
+      - allowedUses:
+          - Workload
+          - Tunnel
+        blockSize: 26
+        cidr: 10.243.0.0/16
+        disableBGPExport: false
+        encapsulation: VXLAN
+        name: default-ipv4-ippool
+        natOutgoing: Enabled
+        nodeSelector: all()

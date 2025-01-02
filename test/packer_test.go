@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/packer"
 	"github.com/gruntwork-io/terratest/modules/shell"
@@ -65,7 +66,7 @@ func TestPackerImage(t *testing.T) {
 		t.Fatalf("Expected `systemctl show containerd` output to contain `ActiveState=active`, got: `%s`\n", containerdShowState)
 	}
 
-	ssh.CheckSshCommand(t, host, "sudo kubeadm init")
+	ssh.CheckSshCommand(t, host, "sudo kubeadm init --pod-network-cidr=10.243.0.0/16")
 	kubeconfigContent := ssh.FetchContentsOfFile(t, host, true, "/etc/kubernetes/admin.conf")
 	kubeconfigFile, err := os.CreateTemp("", "kubeconfig")
 	if err != nil {
@@ -82,12 +83,16 @@ func TestPackerImage(t *testing.T) {
 
 	k8s.WaitUntilNumPodsCreated(t, kubectlOptions, v1.ListOptions{}, 7, 10, time.Second*5)
 
+	helm.AddRepo(t, &helm.Options{}, "tigera", "https://docs.tigera.io/calico/charts")
+	helm.Install(t, &helm.Options{
+		ValuesFiles:    []string{"calico-values.yml"},
+		KubectlOptions: kubectlOptions,
+	}, "tigera/tigera-operator", "tigera-operator")
+
 	pods := k8s.ListPods(t, kubectlOptions, v1.ListOptions{})
 	for _, pod := range pods {
-		if strings.Contains(pod.Name, "coredns") {
-			// CoreDNS pods should have "not ready" status because there is no network plugin installed.
-			continue
-		}
-		k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 10, time.Second*10)
+		k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 10, time.Second*5)
 	}
+
+	k8s.WaitUntilAllNodesReady(t, kubectlOptions, 5, time.Second*5)
 }
