@@ -17,13 +17,6 @@ resource "libvirt_cloudinit_disk" "config" {
         shell: /bin/bash
         ssh-authorized-keys:
           - ${var.authorized_key}
-    packages:
-      - qemu-guest-agent
-    runcmd:
-      - - systemctl
-        - enable
-        - "--now"
-        - qemu-guest-agent.service
     hostname: ${var.hostname}
     EOF
 }
