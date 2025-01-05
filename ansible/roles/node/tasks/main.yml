@@ -1,0 +1,67 @@
+---
+- name: SELinux | set permissive mode
+  ansible.posix.selinux:
+    policy: targeted
+    state: permissive
+  become: true
+
+- name: Kernel | overlay module is present
+  community.general.modprobe:
+    name: overlay
+    state: present
+  become: true
+
+- name: Kernel | br_netfilter module is present
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+  become: true
+
+- name: Kernel | persist required modules
+  ansible.builtin.copy:
+    content: |
+      overlay
+      br_netfilter
+    dest: /etc/modules-load.d/kubernetes.conf
+    mode: "0644"
+  become: true
+
+- name: Kernel | Set and persist params
+  ansible.posix.sysctl:
+    name: "{{ item.param }}"
+    value: "{{ item.val }}"
+    state: present
+    sysctl_set: true
+    reload: true
+  become: true
+  loop:
+    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
+    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
+    - { param: net.ipv4.ip_forward, val: 1 }
+    - { param: net.ipv6.conf.all.forwarding, val: 1 }
+    - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
+    - { param: net.ipv4.tcp_congestion_control, val: bbr }
+    - { param: vm.overcommit_memory, val: 1 }
+    - { param: kernel.panic, val: 10 }
+    - { param: kernel.panic_on_oops, val: 1 }
+    - { param: fs.inotify.max_user_instances, val: 8192 }
+    - { param: fs.inotify.max_user_watches, val: 524288 }
+
+- name: Calico | NetworkManager config is present
+  ansible.builtin.copy:
+    content: |
+      [keyfile]
+      unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+    dest: /etc/NetworkManager/conf.d/calico.conf
+  become: true
+
+- name: Guest Agent | QEMU guest agent is present
+  ansible.builtin.dnf:
+    name: qemu-guest-agent
+  become: true
+
+- name: Guest Agent | QEMU guest agent service is enabled
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: qemu-guest-agent.service
+  become: true

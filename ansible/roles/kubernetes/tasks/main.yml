@@ -1,0 +1,37 @@
+---
+- name: Kubernetes | dnf repo is present
+  ansible.builtin.yum_repository:
+    name: Kubernetes
+    description: Kubernetes binaries
+    baseurl: https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/rpm/
+    gpgcheck: true
+    gpgkey: https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/rpm/repodata/repomd.xml.key
+    exclude:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - cri-tools
+      - kubernetes-cni
+  become: true
+
+- name: kubernetes | packages are installed
+  ansible.builtin.dnf:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - kubernetes-cni
+    disable_excludes: Kubernetes
+  become: true
+
+- name: Kubernetes | kubelet service is enabled
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: kubelet.service
+    state: started
+  become: true
+
+- name: Kubernetes | Pull images for faster startup
+  ansible.builtin.command:
+    cmd: kubeadm config images pull
+  become: true

@@ -1,0 +1,26 @@
+---
+- name: CRI-O | dnf repo is present
+  ansible.builtin.yum_repository:
+    name: CRI-O
+    description: CRI-O packages
+    baseurl: https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/rpm/
+    gpgcheck: true
+    gpgkey: https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/rpm/repodata/repomd.xml.key
+    exclude:
+      - cri-o
+  become: true
+
+- name: CRI-O | package is installed
+  ansible.builtin.dnf:
+    name:
+      - cri-o
+    disable_excludes: CRI-O
+  become: true
+
+- name: CRI-O | service is enabled
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    enabled: true
+    name: crio.service
+    state: started
+  become: true
