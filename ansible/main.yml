@@ -5,7 +5,7 @@
     - name: node
     - name: crio
       vars:
-        crio_version: v1.32
+        crio_version: "{{ template_kubernetes_version }}"
     - name: kubernetes
       vars:
-        kubernetes_version: v1.32
+        kubernetes_version: "{{ template_kubernetes_version }}"

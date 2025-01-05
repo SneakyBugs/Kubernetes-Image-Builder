@@ -11,9 +11,16 @@ packer {
   }
 }
 
+locals {
+  rocky_version      = "9.5"
+  rocky_build        = "20241118.0"
+  kubernetes_version = "1.32"
+  rocky_major        = split(".", local.rocky_version)[0]
+}
+
 source "qemu" "rocky" {
-  iso_url          = "https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.5-20241118.0.x86_64.qcow2"
-  iso_checksum     = "file:https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.5-20241118.0.x86_64.qcow2.CHECKSUM"
+  iso_url          = "https://dl.rockylinux.org/vault/rocky/${local.rocky_version}/images/x86_64/Rocky-${local.rocky_major}-GenericCloud-Base-${local.rocky_version}-${local.rocky_build}.x86_64.qcow2"
+  iso_checksum     = "file:https://dl.rockylinux.org/vault/rocky/${local.rocky_version}/images/x86_64/Rocky-${local.rocky_major}-GenericCloud-Base-${local.rocky_version}-${local.rocky_build}.x86_64.qcow2.CHECKSUM"
   disk_image       = true
   skip_resize_disk = true
   headless         = true
@@ -59,8 +66,11 @@ build {
     command       = "./ansible/ansible.sh"
     playbook_file = "./ansible/main.yml"
     user          = "packer"
-    # https://github.com/hashicorp/packer/issues/11783
-    extra_arguments = ["--scp-extra-args", "'-O'"]
+    extra_arguments = [
+      # https://github.com/hashicorp/packer/issues/11783
+      "--scp-extra-args", "'-O'",
+      "--extra-vars", "template_kubernetes_version=v${local.kubernetes_version}"
+    ]
   }
 
   provisioner "shell" {
