@@ -61,9 +61,9 @@ func TestPackerImage(t *testing.T) {
 	// Retry because sometimes SSH server takes a few seconds to start after booting.
 	ssh.CheckSshCommandWithRetry(t, host, "cloud-init status --wait", 5, time.Second*5)
 
-	containerdShowState := ssh.CheckSshCommand(t, host, "sudo systemctl show containerd --property=ActiveState")
+	containerdShowState := ssh.CheckSshCommand(t, host, "sudo systemctl show crio.service --property=ActiveState")
 	if !strings.Contains(containerdShowState, "ActiveState=active") {
-		t.Fatalf("Expected `systemctl show containerd` output to contain `ActiveState=active`, got: `%s`\n", containerdShowState)
+		t.Fatalf("Expected `systemctl show crio.service` output to contain `ActiveState=active`, got: `%s`\n", containerdShowState)
 	}
 
 	ssh.CheckSshCommand(t, host, "sudo kubeadm init --pod-network-cidr=10.243.0.0/16")

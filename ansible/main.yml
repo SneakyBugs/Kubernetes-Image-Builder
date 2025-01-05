@@ -57,61 +57,31 @@
         - { param: fs.inotify.max_user_instances, val: 8192 }
         - { param: fs.inotify.max_user_watches, val: 524288 }
 
-    # containerd role
-    - name: Containerd | download
-      ansible.builtin.get_url:
-        url: https://github.com/containerd/containerd/releases/download/v2.0.1/containerd-2.0.1-linux-amd64.tar.gz
-        checksum: sha256:{{ (lookup("ansible.builtin.url", "https://github.com/containerd/containerd/releases/download/v2.0.1/containerd-2.0.1-linux-amd64.tar.gz.sha256sum") | split)[0] }}
-        dest: /tmp/containerd.tar.gz
-
-    - name: Containerd | unarchive
-      ansible.builtin.unarchive:
-        src: /tmp/containerd.tar.gz
-        remote_src: true
-        dest: /usr/local
+    # crio role
+    - name: CRI-O | dnf repo is present
+      ansible.builtin.yum_repository:
+        name: CRI-O
+        description: CRI-O packages
+        baseurl: https://pkgs.k8s.io/addons:/cri-o:/stable:/v1.32/rpm/
+        gpgcheck: true
+        gpgkey: https://pkgs.k8s.io/addons:/cri-o:/stable:/v1.32/rpm/repodata/repomd.xml.key
+        exclude:
+          - cri-o
       become: true
 
-    - name: Containerd | systemd unit is present
-      ansible.builtin.get_url:
-        url: https://raw.githubusercontent.com/containerd/containerd/v2.0.1/containerd.service
-        dest: /usr/lib/systemd/system/containerd.service
+    - name: CRI-O | package is installed
+      ansible.builtin.dnf:
+        name:
+          - cri-o
+        disable_excludes: CRI-O
       become: true
 
-    - name: Containerd | config directory is present
-      ansible.builtin.file:
-        path: /etc/containerd
-        state: directory
-      become: true
-
-    - name: Containerd | config is present
-      ansible.builtin.copy:
-        content: |
-          version = 3
-
-          [plugins]
-            [plugins.'io.containerd.cri.v1.images'.pinned_images]
-              sandbox = "registry.k8s.io/pause:3.10"
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-              runtime_type = "io.containerd.runc.v2"
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-              SystemdCgroup = true
-        dest: /etc/containerd/config.toml
-        mode: "644"
-      become: true
-
-    - name: Containerd | service is enabled
+    - name: CRI-O | service is enabled
       ansible.builtin.systemd_service:
         daemon_reload: true
         enabled: true
-        name: containerd.service
+        name: crio.service
         state: started
-      become: true
-
-    - name: Containerd | runc is present
-      ansible.builtin.get_url:
-        url: https://github.com/opencontainers/runc/releases/download/v1.2.3/runc.amd64
-        dest: /usr/local/sbin/runc
-        mode: '755'
       become: true
 
     # kubernetes role
