@@ -60,8 +60,8 @@
     # containerd role
     - name: Containerd | download
       ansible.builtin.get_url:
-        url: https://github.com/containerd/containerd/releases/download/v1.7.13/containerd-1.7.13-linux-amd64.tar.gz
-        checksum: sha256:c2371c009dd8b7738663333d91e5ab50d204f8bcae24201f45d59060d12c3a23
+        url: https://github.com/containerd/containerd/releases/download/v2.0.1/containerd-2.0.1-linux-amd64.tar.gz
+        checksum: sha256:{{ (lookup("ansible.builtin.url", "https://github.com/containerd/containerd/releases/download/v2.0.1/containerd-2.0.1-linux-amd64.tar.gz.sha256sum") | split)[0] }}
         dest: /tmp/containerd.tar.gz
 
     - name: Containerd | unarchive
@@ -73,7 +73,7 @@
 
     - name: Containerd | systemd unit is present
       ansible.builtin.get_url:
-        url: https://raw.githubusercontent.com/containerd/containerd/v1.7.21/containerd.service
+        url: https://raw.githubusercontent.com/containerd/containerd/v2.0.1/containerd.service
         dest: /usr/lib/systemd/system/containerd.service
       become: true
 
@@ -86,13 +86,15 @@
     - name: Containerd | config is present
       ansible.builtin.copy:
         content: |
-          version = 2
-          [plugins."io.containerd.grpc.v1.cri"]
-            sandbox_image = "registry.k8s.io/pause:3.10"
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-            runtime_type = "io.containerd.runc.v2"
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-            SystemdCgroup = true
+          version = 3
+
+          [plugins]
+            [plugins.'io.containerd.cri.v1.images'.pinned_images]
+              sandbox = "registry.k8s.io/pause:3.10"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+              runtime_type = "io.containerd.runc.v2"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              SystemdCgroup = true
         dest: /etc/containerd/config.toml
         mode: "644"
       become: true
@@ -107,7 +109,7 @@
 
     - name: Containerd | runc is present
       ansible.builtin.get_url:
-        url: https://github.com/opencontainers/runc/releases/download/v1.1.12/runc.amd64
+        url: https://github.com/opencontainers/runc/releases/download/v1.2.3/runc.amd64
         dest: /usr/local/sbin/runc
         mode: '755'
       become: true
@@ -123,9 +125,9 @@
       ansible.builtin.yum_repository:
         name: Kubernetes
         description: Kubernetes binaries
-        baseurl: https://pkgs.k8s.io/core:/stable:/v1.31/rpm/
+        baseurl: https://pkgs.k8s.io/core:/stable:/v1.32/rpm/
         gpgcheck: true
-        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.31/rpm/repodata/repomd.xml.key
+        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.32/rpm/repodata/repomd.xml.key
         exclude:
           - kubelet
           - kubeadm
