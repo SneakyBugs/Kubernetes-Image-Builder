@@ -1,7 +1,6 @@
 package test
 
 import (
-	"net"
 	"os"
 	"strings"
 	"testing"
@@ -43,13 +42,8 @@ func TestPackerImage(t *testing.T) {
 	defer terraform.Destroy(t, terraformOptions)
 	terraform.InitAndApply(t, terraformOptions)
 
-	sshIP := terraform.Output(t, terraformOptions, "ip")
 	// Reapply if the output IP is not IPv4 due to a bug with the Libvirt Terraform provider.
-	parsedIP := net.ParseIP(sshIP)
-	if parsedIP == nil || parsedIP.To4() == nil {
-		terraform.Apply(t, terraformOptions)
-		sshIP = terraform.Output(t, terraformOptions, "ip")
-	}
+	sshIP := retryApplyUntilIPv4IsAvailable(t, terraformOptions, "ip", 5, time.Second*1)
 
 	host := ssh.Host{
 		Hostname:    sshIP,
