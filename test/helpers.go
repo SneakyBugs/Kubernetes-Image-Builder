@@ -5,10 +5,13 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/retry"
 	tgssh "github.com/gruntwork-io/terratest/modules/ssh"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"golang.org/x/crypto/ssh"
@@ -52,16 +55,18 @@ func generateED25519KeyPairE() (*tgssh.KeyPair, error) {
 	return &tgssh.KeyPair{PublicKey: pubKeyString, PrivateKey: keyPEM}, nil
 }
 
-func retryApplyUntilIPv4IsAvailable(t *testing.T, tfOptions *terraform.Options, ipOutputKey string, retries int, sleepBetweenRetries time.Duration) string {
-	for i := 0; i <= retries; i++ {
-		sshIP := terraform.Output(t, tfOptions, ipOutputKey)
-		parsedIP := net.ParseIP(sshIP)
-		if parsedIP.To4() != nil {
-			return parsedIP.To4().String()
-		}
-		time.Sleep(time.Second * 1)
+func retryApplyUntilIPv4AreAvailable(t *testing.T, tfOptions *terraform.Options, ipsOutputKey string, retries int, sleepBetweenRetries time.Duration) []string {
+	result := retry.DoWithRetry(t, "apply until IPv4 is available for all LibVirt domains", retries, sleepBetweenRetries, func() (string, error) {
 		terraform.Apply(t, tfOptions)
-	}
-	t.Fatalf("failed to get IPv4 address of virtual machine after %d retries", retries)
-	return ""
+
+		sshIPs := terraform.OutputList(t, tfOptions, ipsOutputKey)
+		for outputIndex, sshIP := range sshIPs {
+			parsedIP := net.ParseIP(sshIP)
+			if parsedIP.To4() == nil {
+				return "", fmt.Errorf("Output %s[%d]=%s must be an IPv4 address", ipsOutputKey, outputIndex, sshIP)
+			}
+		}
+		return strings.Join(sshIPs, ","), nil
+	})
+	return strings.Split(result, ",")
 }

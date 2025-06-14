@@ -1,13 +1,19 @@
+locals {
+  nodes = toset([for num in range(var.node_count) : tostring(num)])
+}
+
 resource "random_uuid" "domain" {}
 
 resource "libvirt_volume" "disk" {
-  name   = "${var.hostname}-${random_uuid.domain.result}.qcow2"
-  pool   = "default"
-  source = "../../build/rocky-9.qcow2"
+  for_each = local.nodes
+  name     = "${var.hostname}-${random_uuid.domain.result}-${each.key}.qcow2"
+  pool     = "default"
+  source   = "../../build/rocky-9.qcow2"
 }
 
 resource "libvirt_cloudinit_disk" "config" {
-  name      = "${var.hostname}-${random_uuid.domain.result}-cloudinit.iso"
+  for_each  = local.nodes
+  name      = "${var.hostname}-${random_uuid.domain.result}-${each.key}-cloudinit.iso"
   pool      = "default"
   user_data = <<-EOF
     #cloud-config
@@ -17,21 +23,22 @@ resource "libvirt_cloudinit_disk" "config" {
         shell: /bin/bash
         ssh_authorized_keys:
           - ${var.authorized_key}
-    hostname: ${var.hostname}
+    hostname: ${var.hostname}-${each.key}
     EOF
 }
 
 resource "libvirt_domain" "node" {
-  name       = "${var.hostname}-${random_uuid.domain.result}"
+  for_each   = local.nodes
+  name       = "${var.hostname}-${random_uuid.domain.result}-${each.key}"
   memory     = var.memory
   vcpu       = var.cores
-  cloudinit  = libvirt_cloudinit_disk.config.id
+  cloudinit  = libvirt_cloudinit_disk.config[each.key].id
   qemu_agent = true
   firmware   = "/usr/share/OVMF/OVMF_CODE.fd"
 
   # Required for idempotency.
   nvram {
-    file     = "/var/lib/libvirt/qemu/nvram/${var.hostname}-${random_uuid.domain.result}_VARS.fd"
+    file     = "/var/lib/libvirt/qemu/nvram/${var.hostname}-${random_uuid.domain.result}-${each.key}_VARS.fd"
     template = "/usr/share/OVMF/OVMF_VARS.fd"
   }
 
@@ -46,7 +53,7 @@ resource "libvirt_domain" "node" {
   }
 
   disk {
-    volume_id = libvirt_volume.disk.id
+    volume_id = libvirt_volume.disk[each.key].id
   }
 
   console {

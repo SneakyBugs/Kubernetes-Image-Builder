@@ -1,3 +1,8 @@
+variable "node_count" {
+  type    = number
+  default = 2
+}
+
 variable "hostname" {
   type    = string
   default = "kib"
@@ -15,7 +20,7 @@ variable "authorized_key" {
 
 variable "memory" {
   type    = number
-  default = 6144
+  default = 1024 * 4
 }
 
 variable "cores" {

@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -46,37 +47,49 @@ func TestPackerImage(t *testing.T) {
 	terraform.InitAndApply(t, terraformOptions)
 
 	// Reapply if the output IP is not IPv4 due to a bug with the Libvirt Terraform provider.
-	sshIP := retryApplyUntilIPv4IsAvailable(t, terraformOptions, "ip", 5, time.Second*1)
+	sshIPs := retryApplyUntilIPv4AreAvailable(t, terraformOptions, "ips", 5, time.Second)
 
-	host := ssh.Host{
-		Hostname:    sshIP,
-		SshUserName: "terraform",
-		SshKeyPair:  sshKeyPair,
-	}
-
-	// Check Cloud Init ran successfully and SSH works.
-	// Retry because sometimes SSH server takes a few seconds to start after booting.
-	ssh.CheckSshCommandWithRetry(t, host, "cloud-init status --wait", 5, time.Second*5)
-
-	containerdShowState := ssh.CheckSshCommand(t, host, "sudo systemctl show crio.service --property=ActiveState")
-	if !strings.Contains(containerdShowState, "ActiveState=active") {
-		t.Fatalf("Expected `systemctl show crio.service` output to contain `ActiveState=active`, got: `%s`\n", containerdShowState)
-	}
-
-	ssh.CheckSshCommand(t, host, "sudo kubeadm init --pod-network-cidr=10.243.0.0/16")
-	kubeconfigContent := ssh.FetchContentsOfFile(t, host, true, "/etc/kubernetes/admin.conf")
 	kubeconfigFile, err := os.CreateTemp("", "kubeconfig")
-	if err != nil {
-		t.Fatalf("Expected no error, got %v\n", err)
-	}
-	_, err = kubeconfigFile.WriteString(kubeconfigContent)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v\n", err)
-	}
-	kubeconfig := kubeconfigFile.Name()
-	kubeconfigFile.Close()
+	kubeadmJoinCommand := ""
 
-	kubectlOptions := k8s.NewKubectlOptions("kubernetes-admin@kubernetes", kubeconfig, "kube-system")
+	for domainIndex, sshIP := range sshIPs {
+		host := ssh.Host{
+			Hostname:    sshIP,
+			SshUserName: "terraform",
+			SshKeyPair:  sshKeyPair,
+		}
+
+		// Check Cloud Init ran successfully and SSH works.
+		// Retry because sometimes SSH server takes a few seconds to start after booting.
+		ssh.CheckSshCommandWithRetry(t, host, "cloud-init status --wait", 5, time.Second*5)
+
+		containerdShowState := ssh.CheckSshCommand(t, host, "sudo systemctl show crio.service --property=ActiveState")
+		if !strings.Contains(containerdShowState, "ActiveState=active") {
+			t.Fatalf("Expected `systemctl show crio.service` output to contain `ActiveState=active`, got: `%s`\n", containerdShowState)
+		}
+
+		if domainIndex == 0 {
+			// First LibVirt domain is used as control plane node.
+			ssh.CheckSshCommand(t, host, "sudo kubeadm init --pod-network-cidr=10.243.0.0/16")
+
+			kubeadmJoinCommand = ssh.CheckSshCommand(t, host, "sudo kubeadm token create --print-join-command")
+
+			kubeconfigContent := ssh.FetchContentsOfFile(t, host, true, "/etc/kubernetes/admin.conf")
+			if err != nil {
+				t.Fatalf("Expected no error, got %v\n", err)
+			}
+			_, err = kubeconfigFile.WriteString(kubeconfigContent)
+			if err != nil {
+				t.Fatalf("Expected no error, got %v\n", err)
+			}
+			kubeconfigFile.Close()
+		} else {
+			// Remaining LibVirt domains are used as worker nodes.
+			ssh.CheckSshCommand(t, host, fmt.Sprintf("sudo %s", kubeadmJoinCommand))
+		}
+	}
+
+	kubectlOptions := k8s.NewKubectlOptions("kubernetes-admin@kubernetes", kubeconfigFile.Name(), "kube-system")
 
 	k8s.WaitUntilNumPodsCreated(t, kubectlOptions, v1.ListOptions{}, 7, 10, time.Second*5)
 
