@@ -15,7 +15,7 @@ resource "libvirt_cloudinit_disk" "config" {
       - name: ${var.user}
         sudo: ALL=(ALL) NOPASSWD:ALL
         shell: /bin/bash
-        ssh-authorized-keys:
+        ssh_authorized_keys:
           - ${var.authorized_key}
     hostname: ${var.hostname}
     EOF

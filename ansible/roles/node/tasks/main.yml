@@ -11,17 +11,10 @@
     state: present
   become: true
 
-- name: Kernel | br_netfilter module is present
-  community.general.modprobe:
-    name: br_netfilter
-    state: present
-  become: true
-
 - name: Kernel | persist required modules
   ansible.builtin.copy:
     content: |
       overlay
-      br_netfilter
     dest: /etc/modules-load.d/kubernetes.conf
     mode: "0644"
   become: true
@@ -35,8 +28,6 @@
     reload: true
   become: true
   loop:
-    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
-    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
     - { param: net.ipv4.ip_forward, val: 1 }
     - { param: net.ipv6.conf.all.forwarding, val: 1 }
     - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }

@@ -39,7 +39,10 @@ func TestPackerImage(t *testing.T) {
 		},
 	})
 
-	defer terraform.Destroy(t, terraformOptions)
+	_, ok = os.LookupEnv("TEST_SKIP_DESTROY")
+	if !ok {
+		defer terraform.Destroy(t, terraformOptions)
+	}
 	terraform.InitAndApply(t, terraformOptions)
 
 	// Reapply if the output IP is not IPv4 due to a bug with the Libvirt Terraform provider.
@@ -77,15 +80,24 @@ func TestPackerImage(t *testing.T) {
 
 	k8s.WaitUntilNumPodsCreated(t, kubectlOptions, v1.ListOptions{}, 7, 10, time.Second*5)
 
+	kubectlOptions.Namespace = "tigera-operator"
 	helm.AddRepo(t, &helm.Options{}, "tigera", "https://docs.tigera.io/calico/charts")
 	helm.Install(t, &helm.Options{
 		ValuesFiles:    []string{"calico-values.yml"},
+		Version:        "v3.30.1",
 		KubectlOptions: kubectlOptions,
+		ExtraArgs: map[string][]string{
+			"install": {"--create-namespace"},
+		},
 	}, "tigera/tigera-operator", "tigera-operator")
 
-	pods := k8s.ListPods(t, kubectlOptions, v1.ListOptions{})
-	for _, pod := range pods {
-		k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 10, time.Second*5)
+	namespaces := k8s.ListNamespaces(t, kubectlOptions, v1.ListOptions{})
+	for _, namespace := range namespaces {
+		kubectlOptions.Namespace = namespace.Name
+		pods := k8s.ListPods(t, kubectlOptions, v1.ListOptions{})
+		for _, pod := range pods {
+			k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 10, time.Second*5)
+		}
 	}
 
 	k8s.WaitUntilAllNodesReady(t, kubectlOptions, 5, time.Second*5)

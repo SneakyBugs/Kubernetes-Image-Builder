@@ -12,15 +12,15 @@ packer {
 }
 
 locals {
-  rocky_version      = "9.5"
-  rocky_build        = "20241118.0"
+  rocky_version      = "10.0"
+  rocky_build        = "20250609.1"
   kubernetes_version = "1.32"
   rocky_major        = split(".", local.rocky_version)[0]
 }
 
 source "qemu" "rocky" {
-  iso_url          = "https://dl.rockylinux.org/vault/rocky/${local.rocky_version}/images/x86_64/Rocky-${local.rocky_major}-GenericCloud-Base-${local.rocky_version}-${local.rocky_build}.x86_64.qcow2"
-  iso_checksum     = "file:https://dl.rockylinux.org/vault/rocky/${local.rocky_version}/images/x86_64/Rocky-${local.rocky_major}-GenericCloud-Base-${local.rocky_version}-${local.rocky_build}.x86_64.qcow2.CHECKSUM"
+  iso_url          = "https://dl.rockylinux.org/pub/rocky/${local.rocky_version}/images/x86_64/Rocky-${local.rocky_major}-GenericCloud-Base-${local.rocky_version}-${local.rocky_build}.x86_64.qcow2"
+  iso_checksum     = "file:https://dl.rockylinux.org/pub/rocky/${local.rocky_version}/images/x86_64/Rocky-${local.rocky_major}-GenericCloud-Base-${local.rocky_version}-${local.rocky_build}.x86_64.qcow2.CHECKSUM"
   disk_image       = true
   skip_resize_disk = true
   headless         = true
