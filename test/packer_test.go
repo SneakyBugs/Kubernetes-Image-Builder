@@ -91,7 +91,7 @@ func TestPackerImage(t *testing.T) {
 
 	kubectlOptions := k8s.NewKubectlOptions("kubernetes-admin@kubernetes", kubeconfigFile.Name(), "kube-system")
 
-	k8s.WaitUntilNumPodsCreated(t, kubectlOptions, v1.ListOptions{}, 7, 10, time.Second*5)
+	k8s.WaitUntilNumPodsCreated(t, kubectlOptions, v1.ListOptions{}, 8, 10, time.Second*5)
 
 	kubectlOptions.Namespace = "tigera-operator"
 	helm.AddRepo(t, &helm.Options{}, "tigera", "https://docs.tigera.io/calico/charts")
@@ -109,8 +109,13 @@ func TestPackerImage(t *testing.T) {
 		kubectlOptions.Namespace = namespace.Name
 		pods := k8s.ListPods(t, kubectlOptions, v1.ListOptions{})
 		for _, pod := range pods {
-			k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 10, time.Second*5)
+			k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 24, time.Second*5)
 		}
+	}
+
+	nodes := k8s.GetNodes(t, kubectlOptions)
+	if len(nodes) != 2 {
+		t.Errorf("Expected 2 nodes, got %d", len(nodes))
 	}
 
 	k8s.WaitUntilAllNodesReady(t, kubectlOptions, 5, time.Second*5)

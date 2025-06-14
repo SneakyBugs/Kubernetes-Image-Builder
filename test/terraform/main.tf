@@ -24,6 +24,7 @@ resource "libvirt_cloudinit_disk" "config" {
         ssh_authorized_keys:
           - ${var.authorized_key}
     hostname: ${var.hostname}-${each.key}
+    prefer_fqdn_over_hostname: false
     EOF
 }
 
