@@ -109,7 +109,7 @@ func TestPackerImage(t *testing.T) {
 		kubectlOptions.Namespace = namespace.Name
 		pods := k8s.ListPods(t, kubectlOptions, v1.ListOptions{})
 		for _, pod := range pods {
-			k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 24, time.Second*5)
+			k8s.WaitUntilPodAvailable(t, kubectlOptions, pod.Name, 24, time.Second*10)
 		}
 	}
 

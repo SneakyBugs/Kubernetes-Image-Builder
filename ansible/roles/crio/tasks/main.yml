@@ -3,9 +3,9 @@
   ansible.builtin.yum_repository:
     name: CRI-O
     description: CRI-O packages
-    baseurl: https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/rpm/
+    baseurl: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ crio_version }}/rpm/
     gpgcheck: true
-    gpgkey: https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ crio_version }}/rpm/repodata/repomd.xml.key
+    gpgkey: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ crio_version }}/rpm/repodata/repomd.xml.key
     exclude:
       - cri-o
   become: true
