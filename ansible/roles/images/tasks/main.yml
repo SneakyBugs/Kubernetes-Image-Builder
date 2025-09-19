@@ -1,0 +1,38 @@
+---
+- name: Images | registries config directory exists
+  ansible.builtin.file:
+    state: directory
+    path: /etc/containers
+  when: images_dockerhub_proxy is defined
+
+- name: Images | registries config is present
+  ansible.builtin.template:
+    src: registries.conf.j2
+    dest: /etc/containers/registries.conf
+  become: true
+  when: images_dockerhub_proxy is defined
+
+- name: Images | restart CRI-O to apply registries config
+  ansible.builtin.service:
+    name: cri-o
+    state: restarted
+  become: true
+  when: images_dockerhub_proxy is defined
+
+- name: Images | Pull kubeadm images for faster startup
+  ansible.builtin.command:
+    cmd: kubeadm config images pull
+  become: true
+
+- name: Images | Pull system images for faster startup
+  ansible.builtin.command:
+    cmd: crictl pull {{ item }}
+  become: true
+  loop: '{{ lookup("ansible.builtin.file", "images.json") | ansible.builtin.from_json }}'
+
+- name: Images | registries config is cleaned up
+  ansible.builtin.file:
+    state: absent
+    path: /etc/containers
+  become: true
+  when: images_dockerhub_proxy is defined

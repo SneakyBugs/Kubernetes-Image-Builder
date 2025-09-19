@@ -23,7 +23,7 @@ resource "libvirt_volume" "disk" {
   for_each = local.nodes
   name     = "${var.hostname}-${random_uuid.domain.result}-${each.key}.qcow2"
   pool     = libvirt_pool.local.name
-  source   = "../../build/rocky-9.qcow2"
+  source   = var.image
 }
 
 resource "libvirt_cloudinit_disk" "config" {
@@ -37,8 +37,7 @@ resource "libvirt_cloudinit_disk" "config" {
         sudo: ALL=(ALL) NOPASSWD:ALL
         shell: /bin/bash
         ssh_authorized_keys:
-          - ${var.authorized_key}
-          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICmTzPVmwo0Q7txYnDkD2ubmRxLUBP1MB5x5j8+v0hK8 lior-workstation
+          ${indent(6, yamlencode(var.authorized_keys))}
     hostname: ${var.hostname}-${each.key}
     prefer_fqdn_over_hostname: false
     write_files:

@@ -1,3 +1,11 @@
+variable "image" {
+  type = string
+}
+
+variable "authorized_keys" {
+  type = list(string)
+}
+
 variable "node_count" {
   type    = number
   default = 2
@@ -11,11 +19,6 @@ variable "hostname" {
 variable "user" {
   type    = string
   default = "terraform"
-}
-
-variable "authorized_key" {
-  type    = string
-  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICmTzPVmwo0Q7txYnDkD2ubmRxLUBP1MB5x5j8+v0hK8 lior-workstation"
 }
 
 variable "memory" {

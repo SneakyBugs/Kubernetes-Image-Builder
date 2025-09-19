@@ -14,7 +14,8 @@ packer {
 locals {
   rocky_version      = "10.0"
   rocky_build        = "20250609.1"
-  kubernetes_version = "1.34"
+  kubernetes_version = "1.34.1"
+  cni_version        = "1.6.0"
   rocky_major        = split(".", local.rocky_version)[0]
 }
 
@@ -24,7 +25,7 @@ source "qemu" "rocky" {
   disk_image       = true
   skip_resize_disk = true
   headless         = true
-  vm_name          = "rocky-9.qcow2"
+  vm_name          = "rocky-${local.rocky_version}-k8s-${local.kubernetes_version}-${formatdate("YYYYMMDD", timestamp())}.qcow2"
 
   efi_boot  = true
   cpu_model = "host"
@@ -69,7 +70,7 @@ build {
     extra_arguments = [
       # https://github.com/hashicorp/packer/issues/11783
       "--scp-extra-args", "'-O'",
-      "--extra-vars", "template_kubernetes_version=v${local.kubernetes_version}"
+      "--extra-vars", "template_kubernetes_version=${local.kubernetes_version} template_cni_version=${local.cni_version}"
     ]
   }
 
@@ -81,4 +82,6 @@ build {
       "sudo cloud-init clean --logs --seed --machine-id",
     ]
   }
+
+  post-processor "manifest" {}
 }

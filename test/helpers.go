@@ -4,9 +4,12 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -63,10 +66,53 @@ func retryApplyUntilIPv4AreAvailable(t *testing.T, tfOptions *terraform.Options,
 		for outputIndex, sshIP := range sshIPs {
 			parsedIP := net.ParseIP(sshIP)
 			if parsedIP.To4() == nil {
-				return "", fmt.Errorf("Output %s[%d]=%s must be an IPv4 address", ipsOutputKey, outputIndex, sshIP)
+				return "", fmt.Errorf("output %s[%d]=%s must be an IPv4 address", ipsOutputKey, outputIndex, sshIP)
 			}
 		}
 		return strings.Join(sshIPs, ","), nil
 	})
 	return strings.Split(result, ",")
+}
+
+func fetchImageNameFromPackerManifest(t *testing.T) string {
+	manifestFile, err := os.Open("../packer-manifest.json")
+	if err != nil {
+		t.Fatalf("Expected no error when opening packer-manifest.json, got %v", err)
+	}
+	defer func() {
+		_ = manifestFile.Close()
+	}()
+
+	manifestBytes, err := io.ReadAll(manifestFile)
+	if err != nil {
+		t.Fatalf("Expected no error when reading manifest file, got %v", err)
+	}
+
+	var manifest PackerManifest
+	err = json.Unmarshal(manifestBytes, &manifest)
+	if err != nil {
+		t.Fatalf("Expected no error when unmarshalling manifest, got %v", err)
+	}
+
+	for _, build := range manifest.Builds {
+		for _, buildFile := range build.Files {
+			if strings.HasSuffix(buildFile.Name, ".qcow2") {
+				return fmt.Sprintf("../../%s", buildFile.Name)
+			}
+		}
+	}
+	t.Fatalf("Expected to find an image file with '.qcow2' suffix, found none")
+	return ""
+}
+
+type PackerManifest struct {
+	Builds []PackerManifestBuild `json:"builds"`
+}
+
+type PackerManifestBuild struct {
+	Files []PackerManifestFiles `json:"files"`
+}
+
+type PackerManifestFiles struct {
+	Name string `json:"name"`
 }

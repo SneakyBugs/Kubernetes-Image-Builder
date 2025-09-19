@@ -2,10 +2,9 @@
 - name: Node configuration
   hosts: default
   roles:
+    - name: sneakybugs.kubernetes.system
+      vars:
+        system_kubernetes_version: "{{ template_kubernetes_version }}"
+        system_cni_version: "{{ template_cni_version }}"
     - name: node
-    - name: crio
-      vars:
-        crio_version: "{{ template_kubernetes_version }}"
-    - name: kubernetes
-      vars:
-        kubernetes_version: "{{ template_kubernetes_version }}"
+    - name: images

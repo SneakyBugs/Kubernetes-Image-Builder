@@ -26,17 +26,27 @@ func TestPackerImage(t *testing.T) {
 
 		shell.RunCommand(t, shell.Command{
 			Command: "rm",
-			Args:    []string{"-rf", "../build"},
+			Args:    []string{"-rf", "../build", "../packer-manifest.json"},
 		})
 		packer.BuildArtifact(t, packerOptions)
 	}
 
 	sshKeyPair := generateED25519KeyPair(t)
+	imagePath := fetchImageNameFromPackerManifest(t)
+
+	authorizedKeys := []string{
+		strings.TrimSpace(sshKeyPair.PublicKey),
+	}
+	additionalKeysValue, ok := os.LookupEnv("TEST_ADDITIONAL_AUTHORIZED_KEYS")
+	if ok {
+		authorizedKeys = append(authorizedKeys, strings.Split(additionalKeysValue, "\n")...)
+	}
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
 		TerraformDir: "terraform",
-		Vars: map[string]interface{}{
-			"authorized_key": sshKeyPair.PublicKey,
+		Vars: map[string]any{
+			"image":           imagePath,
+			"authorized_keys": authorizedKeys,
 		},
 	})
 
@@ -82,7 +92,7 @@ func TestPackerImage(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Expected no error, got %v\n", err)
 			}
-			kubeconfigFile.Close()
+			_ = kubeconfigFile.Close()
 		} else {
 			// Remaining LibVirt domains are used as worker nodes.
 			ssh.CheckSshCommand(t, host, fmt.Sprintf("sudo %s", kubeadmJoinCommand))
@@ -94,15 +104,24 @@ func TestPackerImage(t *testing.T) {
 	k8s.WaitUntilNumPodsCreated(t, kubectlOptions, v1.ListOptions{}, 8, 10, time.Second*5)
 
 	kubectlOptions.Namespace = "tigera-operator"
-	helm.AddRepo(t, &helm.Options{}, "tigera", "https://docs.tigera.io/calico/charts")
 	helm.Install(t, &helm.Options{
 		ValuesFiles:    []string{"calico-values.yml"},
-		Version:        "v3.30.1",
+		Version:        "v3.30.3",
 		KubectlOptions: kubectlOptions,
 		ExtraArgs: map[string][]string{
-			"install": {"--create-namespace"},
+			"install": {"--create-namespace", "--repo=https://docs.tigera.io/calico/charts"},
 		},
-	}, "tigera/tigera-operator", "tigera-operator")
+	}, "tigera-operator", "tigera-operator")
+
+	kubectlOptions.Namespace = "cert-manager"
+	helm.Install(t, &helm.Options{
+		ValuesFiles:    []string{"cert-manager-values.yml"},
+		Version:        "v1.19.1",
+		KubectlOptions: kubectlOptions,
+		ExtraArgs: map[string][]string{
+			"install": {"--create-namespace", "--repo=https://charts.jetstack.io"},
+		},
+	}, "cert-manager", "cert-manager")
 
 	namespaces := k8s.ListNamespaces(t, kubectlOptions, v1.ListOptions{})
 	for _, namespace := range namespaces {

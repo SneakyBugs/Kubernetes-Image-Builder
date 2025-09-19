@@ -1,7 +1,10 @@
 build
+packer-manifest.json
 
 .terraform
 *.tfstate
 *.tfstate.backup
 
 .venv
+
+.env

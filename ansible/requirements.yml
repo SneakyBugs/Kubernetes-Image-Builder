@@ -4,3 +4,7 @@ collections:
     version: 1.5.4
   - name: community.general
     version: 8.5.0
+  - name: sneakybugs.kubernetes
+    type: git
+    source: git@github.com:SneakyBugs/ansible-collection-kubernetes.git
+    version: 3.0.1
