@@ -19,11 +19,6 @@
   become: true
   when: images_dockerhub_proxy is defined
 
-- name: Images | Pull kubeadm images for faster startup
-  ansible.builtin.command:
-    cmd: kubeadm config images pull
-  become: true
-
 - name: Images | Pull system images for faster startup
   ansible.builtin.command:
     cmd: crictl pull {{ item }}
