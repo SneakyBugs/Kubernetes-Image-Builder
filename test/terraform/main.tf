@@ -3,15 +3,15 @@ locals {
 }
 
 resource "libvirt_pool" "local" {
-  name = "image_builder"
+  name = "kubernetes-image-builder"
   type = "dir"
   target {
-    path = "./pool"
+    path = "/tmp/kib-pool"
   }
 }
 
 resource "libvirt_network" "local" {
-  name = "image-builder"
+  name = "kubernetes-image-builder"
   addresses = [
     "172.16.0.0/24"
   ]
@@ -19,11 +19,18 @@ resource "libvirt_network" "local" {
 
 resource "random_uuid" "domain" {}
 
+resource "libvirt_volume" "base_disk" {
+  name   = "${var.hostname}-${random_uuid.domain.result}-base.qcow2"
+  pool   = libvirt_pool.local.name
+  source = var.image
+}
+
 resource "libvirt_volume" "disk" {
-  for_each = local.nodes
-  name     = "${var.hostname}-${random_uuid.domain.result}-${each.key}.qcow2"
-  pool     = libvirt_pool.local.name
-  source   = var.image
+  for_each       = local.nodes
+  name           = "${var.hostname}-${random_uuid.domain.result}-${each.key}.qcow2"
+  pool           = libvirt_pool.local.name
+  base_volume_id = libvirt_volume.base_disk.id
+  size           = 20 * pow(1000, 3)
 }
 
 resource "libvirt_cloudinit_disk" "config" {
@@ -89,15 +96,15 @@ resource "libvirt_domain" "node" {
     autoport    = true
   }
 
-  # Modify Cloud Init cdrom drive to use sata instead of ide.
-  # Cloud init in Rocky 9 failed to find the drive with ide bus type.
+  # xslt used to:
+  # - Modify Cloud Init cdrom drive to use sata instead of ide.
+  #   Cloud init in Rocky failed to find the drive with ide bus type.
+  # - Add watchdog device.
   xml {
     xslt = <<-EOF
       <xsl:stylesheet version="1.0" 
        xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
           <xsl:output omit-xml-declaration="yes" indent="yes"/>
-
-          <xsl:param name="pNewType" select="'sata'"/>
 
           <xsl:template match="node()|@*">
               <xsl:copy>
@@ -106,9 +113,14 @@ resource "libvirt_domain" "node" {
           </xsl:template>
 
           <xsl:template match="disk[@device='cdrom']/target/@bus">
-              <xsl:attribute name="bus">
-                  <xsl:value-of select="$pNewType"/>
-              </xsl:attribute>
+              <xsl:attribute name="bus">sata</xsl:attribute>
+          </xsl:template>
+
+          <xsl:template match="devices">
+              <xsl:copy>
+                  <xsl:apply-templates select="node()|@*"/>
+                  <watchdog model="i6300esb" action="reset"/>
+              </xsl:copy>
           </xsl:template>
       </xsl:stylesheet>
       EOF
