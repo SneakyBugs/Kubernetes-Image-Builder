@@ -63,12 +63,12 @@ resource "libvirt_domain" "node" {
   vcpu       = var.cores
   cloudinit  = libvirt_cloudinit_disk.config[each.key].id
   qemu_agent = true
-  firmware   = "/usr/share/OVMF/OVMF_CODE.fd"
+  firmware   = "/usr/share/OVMF/OVMF_CODE_4M.fd"
 
   # Required for idempotency.
   nvram {
     file     = "/var/lib/libvirt/qemu/nvram/${var.hostname}-${random_uuid.domain.result}-${each.key}_VARS.fd"
-    template = "/usr/share/OVMF/OVMF_VARS.fd"
+    template = "/usr/share/OVMF/OVMF_VARS_4M.fd"
   }
 
   # Rocky requires CPU features not supported by default qemu64 mode.

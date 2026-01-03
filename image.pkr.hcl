@@ -27,8 +27,9 @@ source "qemu" "rocky" {
   headless         = true
   vm_name          = "rocky-${local.rocky_version}-k8s-${local.kubernetes_version}-${formatdate("YYYYMMDD", timestamp())}.qcow2"
 
-  efi_boot  = true
-  cpu_model = "host"
+  efi_firmware_code = "/usr/share/OVMF/OVMF_CODE_4M.fd"
+  efi_firmware_vars = "/usr/share/OVMF/OVMF_VARS_4M.fd"
+  cpu_model         = "host"
 
   cpus   = 4
   memory = 2048
