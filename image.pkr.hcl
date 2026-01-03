@@ -14,8 +14,8 @@ packer {
 locals {
   rocky_version      = "10.1"
   rocky_build        = "20251116.0"
-  kubernetes_version = "1.34.2"
-  cni_version        = "1.6.0"
+  kubernetes_version = "1.35.0"
+  cni_version        = "1.8.0"
   rocky_major        = split(".", local.rocky_version)[0]
 }
 
