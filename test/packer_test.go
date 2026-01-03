@@ -10,6 +10,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/packer"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/ssh"
 	"github.com/gruntwork-io/terratest/modules/terraform"
@@ -93,13 +94,29 @@ func TestPackerImage(t *testing.T) {
 				t.Fatalf("Expected no error, got %v\n", err)
 			}
 			_ = kubeconfigFile.Close()
+
+			// Wait for control plane to be responsive.
+			kubectlOptions := k8s.NewKubectlOptions("kubernetes-admin@kubernetes", kubeconfigFile.Name(), "kube-system")
+			k8s.WaitUntilPodAvailable(t, kubectlOptions, "kube-apiserver-kib-0", 6, 10*time.Second)
 		} else {
 			// Remaining LibVirt domains are used as worker nodes.
-			ssh.CheckSshCommand(t, host, fmt.Sprintf("sudo %s", kubeadmJoinCommand))
+			o := ssh.CheckSshCommand(t, host, fmt.Sprintf("sudo %s", kubeadmJoinCommand))
+			t.Logf(fmt.Sprintf("===== kubeadm join log =====\n%s\n============================\n", o))
 		}
 	}
 
 	kubectlOptions := k8s.NewKubectlOptions("kubernetes-admin@kubernetes", kubeconfigFile.Name(), "kube-system")
+
+	retry.DoWithRetry(t, "Wait until 2 nodes are connected to the cluster", 18, time.Second*10, func() (string, error) {
+		nodes, err := k8s.GetNodesE(t, kubectlOptions)
+		if err != nil {
+			return "", fmt.Errorf("failed to get nodes: %w", err)
+		}
+		if len(nodes) != 2 {
+			return "", fmt.Errorf("expected 2 nodes, got %d", len(nodes))
+		}
+		return "", nil
+	})
 
 	k8s.WaitUntilNumPodsCreated(t, kubectlOptions, v1.ListOptions{}, 8, 10, time.Second*5)
 
